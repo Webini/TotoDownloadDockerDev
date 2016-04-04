@@ -20,7 +20,7 @@ EXISTS=`echo "SELECT 1 FROM mysql.user WHERE user = 'totodl';" | mysql -u root -
 if [[ $EXISTS != "1" ]]
 then
     echo "CREATE USER 'totodl'@'localhost' IDENTIFIED WITH mysql_native_password;" | mysql -u root -p$ROOT_PASS
-    echo "SET PASSWORD FOR 'totodl'@'localhost' = PASSWORD('$TOTODL_PASS');" | mysql -u root -p$ROOT_PASS
+    echo "SET PASSWORD FOR 'totodl'@'localhost' = PASSWORD('$TOTODL_PASS'); FLUSH PRIVILEGES;" | mysql -u root -p$ROOT_PASS
     echo "User totodl created"
 fi
 

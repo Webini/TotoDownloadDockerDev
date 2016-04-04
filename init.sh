@@ -47,7 +47,7 @@ then
    
     if [ -e /etc/default/totodl_mysql_pass ]
     then
-        /etc/totodl_init.sh `cat /etc/default/totodl_mysql_pass | head -c 1`
+        /etc/totodl_init.sh `cat /etc/default/totodl_mysql_pass`
     else
         /etc/totodl_init.sh ${MYSQL_TOTODL_PASSWORD}
     fi
