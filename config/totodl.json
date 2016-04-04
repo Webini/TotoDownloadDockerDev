@@ -1,0 +1,103 @@
+{ 
+    "http": {
+        "port": 18081,
+        "host": "localhost",
+        "static": "./public/"
+    },
+    "database": {
+        "dialect": "mysql",
+        "host": "localhost",
+        "database": "totodl",
+        "username": "totodl",
+        "password": "__DATABASE_PASSWORD__",
+        "logging": false
+    },
+    "secret": {
+        "salt": "__SECRET_SALT__",
+        "token": "__SECRET_TOKEN__",
+        "download": "__SECRET_DOWNLOAD__"
+    },
+    "download": {
+        "useServer": true,
+        "host": "totodl.dev",
+        "port": 8042,
+        "dlBasepath": "/download",
+	"streamBasepath": "/stream",
+	"playlistBasepath": "/vod-master-playlist",
+        "thumbPath": "/stream-thumb",
+        "ssl": false
+    },
+    "sessionExpiration": 12240,
+    "torrents": {
+        "api": "transmission",
+        "host": "localhost",
+        "port": 9091,
+        "username": "transmission",
+        "password": "transmission",
+        "url": "/transmission/rpc"
+    },
+    "transcoder": {
+	"enable": true,
+        "types": [ "avi", "mkv", "mp4", "mov", "mpg", "mpeg" ],
+        "maxSimult": 1,
+        "output": "/data/transcoded"
+    },
+    "ffmpeg": {
+        "preferredLang": "^fr.*",
+        "debug": false,
+	"thumbnails": {
+            "delay": 10,
+            "size": "140x?"
+        },
+        "qualities": [
+            {
+                "default": true,
+                "name": "480p",
+                "vcodec": "libx264",
+                "vbitrate": 516096,
+                "maxbitrate": 516096,
+                "acodec": "libfaac",
+                "abitrate": 98304,
+                "channel": 2,
+                "threads": 2,
+                "width": 720,
+                "height": 480,
+                "preset": "slow"
+            },
+            {
+                "name": "720p",
+                "vcodec": "libx264",
+                "vbitrate": 890880,
+                "maxbitrate": 890880,
+                "acodec": "libfaac",
+                "abitrate": 131072,
+                "channel": 2,
+                "threads": 2,
+                "width": 1280,
+                "height": 720,
+                "preset": "slow"
+            },
+            {
+                "name": "1080p",
+                "vcodec": "libx264",
+                "vbitrate": 1884160,
+                "maxbitrate": 1884160,
+                "acodec": "libfaac",
+                "abitrate": 163840,
+                "channel": 2,
+                "threads": 2,
+                "width": 1920, 
+                "height": 1080,
+                "preset": "slow"
+            }
+        ]
+    },
+    "moviesdb":{
+        "api": "allocine"
+    },
+    "logs": {
+        "logs": "./app/logs/logs.txt",
+        "exceptions": "./app/logs/exceptions.txt"
+    }
+}
+

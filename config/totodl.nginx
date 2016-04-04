@@ -1,0 +1,153 @@
+server {
+    listen 8042 default_server;
+    
+    index index.html index.htm;
+    server_name totodl.dev _;
+
+    set $transcoded_path "/data/transcoded"; 
+    set $download_path "/data/downloads"; 
+    set $secret_token "__SECRET_DOWNLOAD__"; 
+
+
+    location / {
+        proxy_pass http://127.0.0.1:18081;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection upgrade;
+        proxy_redirect off;
+        proxy_buffers 8 32k;
+        proxy_buffer_size 64k;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-NginX-Proxy true;
+    }
+
+
+    #original file downlad
+    location ~ "^/download/[a-fA-F0-9]{32,64}/([a-zA-Z0-9=\-_]{24})/[0-9]+/([0-9]+)/(.*)$" {
+        set $md5 $1;
+        set $expires $2;
+        set $filepath $3;
+
+        secure_link $md5,$expires;
+        secure_link_md5 "$expires$secret_token";
+
+        if ($secure_link = "") {
+            return 403;
+        }
+
+        if ($secure_link = "0") {
+            return 403;
+        }
+
+        if ($filepath ~* "/?([^/]+)$"){
+            set $filename $1;
+        }
+
+       	rewrite "^/download/[a-fA-F0-9]{32,64}/([a-zA-Z0-9=\-_]{24})/[0-9]+/([0-9]+)/(.*)$" /download-internal/$3 last;
+    }
+
+    #streaming file direct download
+    location ~ "^/stream/([a-fA-F0-9]{32,64})/([a-zA-Z0-9=\-_]{24})/[0-9]+/([a-zA-Z0-9]+)/([0-9]+)/(.*)$" {
+        set $hash $1;
+        set $md5 $2;
+        set $quality $3;
+        set $expires $4;
+        set $filepath $5;
+
+        secure_link $md5,$expires;
+        secure_link_md5 "$expires$secret_token";
+
+        if ($secure_link = "") {
+            return 403;
+        }
+
+        if ($secure_link = "0") {
+            return 403;
+        }
+
+        if ($filepath ~* "/?([^/]+)$"){
+            set $filename $1;
+        }
+
+        rewrite "^/stream/([a-fA-F0-9]{32,64})/([a-zA-Z0-9=\-_]{24})/[0-9]+/([a-zA-Z0-9]+)/([0-9]+)/(.*)$" /stream-internal/$hash/$5.$3 last;
+    }
+    
+    location ~ "^/vod-master-playlist/([0-9a-z,]+)/(.*)/master.(m3u8|mpd|mss)$" {
+        vod_multi_uri_suffix .urlset;
+        set $segmenter $3;
+        set $filepath $2;
+        set $qualities $1;
+        
+        if ($segmenter = "m3u8"){
+            rewrite "^/vod-master-playlist/([0-9a-z,]+)/(.*)/master.m3u8$" /vod-hls/$2.,$1,.urlset/master.m3u8;
+        }
+        if ($segmenter = "mpd"){
+            rewrite "^/vod-master-playlist/([0-9a-z,]+)/(.*)/master.mpd$" /vod-dash/$2.,$1,.urlset/manifest.mpd last;
+        }
+        if ($segmenter = "mss"){
+            rewrite "^/vod-master-playlist/([0-9a-z,]+)/(.*)/master.mss$" /vod-mss/$2.,$1,.urlset/manifest last;
+        }
+    } 
+
+    location /vod-dash {
+        alias $transcoded_path;
+
+        aio on;
+        vod dash;
+        vod_mode local;
+        vod_moov_cache moov_cache 512m;
+    }
+
+    location /vod-mss {
+        alias $transcoded_path;
+       
+        aio on; 
+        vod mss;
+        vod_mode local;
+        vod_moov_cache moov_cache 512m;
+    }
+
+    location /vod-hls {
+        alias $transcoded_path;
+ 
+        aio on; 
+        vod hls;
+        vod_mode local;
+        vod_moov_cache moov_cache 512m;
+    }
+
+
+    location ~ "^/stream-thumb/([a-fA-Z0-9]{32,64})/(.*)$" {
+        set $filepath $2;
+        set $torrentHash $1;
+        
+        if ($filepath ~* "/?([^/]+)$"){
+            set $filename $1;
+            add_header Content-Disposition 'attachment; filename="$1"';
+        }
+        
+        rewrite "^/stream-thumb/([a-fA-Z0-9]{32,64})/(.*)$" /download-thumbnails/$torrentHash/$2 last;
+    }
+
+    location /download-thumbnails {
+        alias $transcoded_path;
+        internal;
+        add_header Content-Disposition 'attachment; filename="$filename"';
+    }
+
+    location /download-internal {
+        alias $download_path;
+        internal;
+        add_header Content-Disposition 'attachment; filename="$filename"';
+    }
+
+    location /stream-internal {
+        alias $transcoded_path;
+        internal;
+        add_header Content-Disposition 'attachment; filename="$filename.$quality.mp4"';
+    }
+}
+
+
